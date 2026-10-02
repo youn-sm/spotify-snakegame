@@ -54,6 +54,7 @@ export async function request<T>(path: string, init: RequestInit = {}, attempt =
   }
   if (res.status === 429 && attempt === 0) {
     const wait = Number(res.headers.get('Retry-After') ?? '1');
+    console.warn(`[snake] rate limited on ${path}, waiting ${Math.min(wait, 10)}s`);
     await new Promise((r) => setTimeout(r, Math.min(wait, 10) * 1000));
     return request(path, init, 1);
   }
@@ -165,9 +166,9 @@ export function transferPlayback(deviceId: string): Promise<void> {
   return request<void>('/me/player', { method: 'PUT', body: JSON.stringify({ device_ids: [deviceId], play: false }) });
 }
 
-export function playTrack(deviceId: string, uri: string): Promise<void> {
+export function playTrack(deviceId: string, uri: string, positionMs = 0): Promise<void> {
   return request<void>(`/me/player/play?device_id=${encodeURIComponent(deviceId)}`, {
     method: 'PUT',
-    body: JSON.stringify({ uris: [uri] }),
+    body: JSON.stringify({ uris: [uri], position_ms: positionMs }),
   });
 }

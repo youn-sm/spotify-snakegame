@@ -19,6 +19,7 @@ export interface RawTrack {
   type?: string;
   is_local?: boolean;
   is_playable?: boolean;
+  duration_ms: number;
   artists: { name: string }[];
   album?: RawAlbum;
 }
@@ -44,6 +45,7 @@ export function toTrack(raw: RawTrack | null | undefined, album?: RawAlbum): Tra
     albumName: a?.name ?? '',
     coverUrl: pickImage(a?.images, 64),
     coverLargeUrl: pickImage(a?.images, 600),
+    durationMs: raw.duration_ms,
   };
 }
 
@@ -56,4 +58,13 @@ export function dedupeByName(tracks: Track[]): Track[] {
     seen.add(key);
     return true;
   });
+}
+
+/**
+ * Where to start playback: ~30% in (usually past the intro, near the first chorus),
+ * clamped to 20–70s, and leaving at least 30s to play.
+ */
+export function startPositionMs(durationMs: number): number {
+  const target = Math.min(70_000, Math.max(20_000, Math.round(durationMs * 0.3)));
+  return Math.max(0, Math.min(target, durationMs - 30_000));
 }

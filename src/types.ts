@@ -8,6 +8,7 @@ export interface Track {
   coverUrl: string;
   /** ~640px cover for the background and now-playing panel. */
   coverLargeUrl: string;
+  durationMs: number;
 }
 
 export type SourceKind = 'album' | 'artist' | 'playlist' | 'liked';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Track } from '../types';
-import { dedupeByName, pickImage, toTrack, type RawAlbum, type RawTrack } from './tracks';
+import { dedupeByName, pickImage, startPositionMs, toTrack, type RawAlbum, type RawTrack } from './tracks';
 
 const images = [
   { url: 'big', width: 640, height: 640 },
@@ -13,6 +13,7 @@ const raw = (over: Partial<RawTrack> = {}): RawTrack => ({
   uri: 'spotify:track:t1',
   name: 'Song',
   type: 'track',
+  duration_ms: 200_000,
   artists: [{ name: 'A' }, { name: 'B' }],
   album,
   ...over,
@@ -43,6 +44,7 @@ describe('toTrack', () => {
       albumName: 'Album',
       coverUrl: 'small',
       coverLargeUrl: 'big',
+      durationMs: 200_000,
     });
   });
   it('uses the fallback album for simplified album tracks', () => {
@@ -64,5 +66,19 @@ describe('dedupeByName', () => {
       '1',
       '3',
     ]);
+  });
+});
+
+describe('startPositionMs', () => {
+  it('starts about 30% into the track', () => {
+    expect(startPositionMs(200_000)).toBe(60_000);
+  });
+  it('clamps to between 20s and 70s', () => {
+    expect(startPositionMs(60_000)).toBe(20_000);
+    expect(startPositionMs(600_000)).toBe(70_000);
+  });
+  it('leaves at least 30s to play on short tracks', () => {
+    expect(startPositionMs(40_000)).toBe(10_000);
+    expect(startPositionMs(25_000)).toBe(0);
   });
 });

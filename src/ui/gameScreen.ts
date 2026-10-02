@@ -8,6 +8,7 @@ import type { Source, Track } from '../types';
 import { el } from './dom';
 import { errorMessage, toast } from './toast';
 
+const DEBUG = new URLSearchParams(window.location.search).has('debug');
 const COLS = 20;
 const ROWS = 20;
 const FOOD_COUNT = 3;
@@ -42,6 +43,8 @@ export function renderGame(
   const nowTitle = el('strong', {}, '아직 재생 중인 곡이 없어요');
   const nowArtist = el('span', { class: 'muted small' }, '먹이를 먹으면 재생돼요');
   const score = el('div', { class: 'score' }, '0');
+  const timing = el('div', { class: 'muted small' });
+  timing.hidden = !DEBUG;
   const quit = el('button', { class: 'btn ghost' }, '그만하기');
 
   root.replaceChildren(
@@ -59,6 +62,7 @@ export function renderGame(
         nowCover,
         nowTitle,
         nowArtist,
+        timing,
         el('p', { class: 'muted small' }, '방향키/WASD 이동 · Space 일시정지'),
         quit,
       ),
@@ -72,6 +76,8 @@ export function renderGame(
   void setBackground(opts.source.imageUrl).then(applyPalette);
 
   function updateOverlay() {
+    const lt = opts.player.lastTiming;
+    if (lt) timing.textContent = `API ${Math.round(lt.apiMs)}ms · 재생까지 ${(lt.audibleMs / 1000).toFixed(1)}s`;
     let text = '';
     if (opts.player.state === 'connecting') text = 'Spotify 플레이어 연결 중…';
     else if (opts.player.state === 'error') text = opts.player.error;
@@ -100,7 +106,7 @@ export function renderGame(
     nowCover.hidden = false;
     nowTitle.textContent = t.name;
     nowArtist.textContent = t.artists;
-    opts.player.play(t.uri).catch((e) => toast(`재생 실패: ${errorMessage(e)}`));
+    opts.player.play(t).catch((e) => toast(`재생 실패: ${errorMessage(e)}`));
     void setBackground(t.coverLargeUrl).then(applyPalette);
   }
 
