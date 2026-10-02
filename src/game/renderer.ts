@@ -1,4 +1,4 @@
-import type { Palette } from '../color';
+import { accentColor, type Palette } from '../color';
 import type { Track } from '../types';
 import { DELTA, type SnakeGame } from './engine';
 
@@ -48,26 +48,31 @@ export class Renderer {
     }
     ctx.stroke();
 
+    const accent = accentColor(palette);
     const pulse = 0.5 + 0.5 * Math.sin(now / 250);
-    for (const f of game.foods) this.drawFood(f.pos.x, f.pos.y, f.item, palette, pulse);
+    for (const f of game.foods) this.drawFood(f.pos.x, f.pos.y, f.item, accent, pulse);
 
     for (let i = game.snake.length - 1; i >= 0; i--) {
       const p = game.snake[i];
       const item = game.bodyItems[i];
-      if (i === 0) this.drawHead(game, palette);
-      else if (item) this.drawCover(item.coverUrl, p.x * cell + 1, p.y * cell + 1, cell - 2, cell * 0.18, palette[0]);
-      else this.drawBlock(p.x, p.y, palette[0], 0.55);
+      if (i === 0) this.drawHead(game, accent);
+      else if (item) this.drawCover(item.coverUrl, p.x * cell + 1, p.y * cell + 1, cell - 2, cell * 0.18, accent);
+      else this.drawBlock(p.x, p.y, accent, 0.6);
     }
 
-    for (const f of game.foods) this.drawLabel(f.pos.x, f.pos.y, f.item.name, w);
+    for (const f of game.foods) {
+      // Put the label above the tile when the cell below is the edge or another food.
+      const above = f.pos.y === this.rows - 1 || game.foods.some((o) => o.pos.x === f.pos.x && o.pos.y === f.pos.y + 1);
+      this.drawLabel(f.pos.x, f.pos.y, f.item.name, w, above);
+    }
   }
 
-  private drawFood(x: number, y: number, t: Track, palette: Palette, pulse: number): void {
+  private drawFood(x: number, y: number, t: Track, glow: string, pulse: number): void {
     const { ctx, cell } = this;
     const pad = cell * 0.06;
     const size = cell - pad * 2;
     ctx.save();
-    ctx.shadowColor = palette[0];
+    ctx.shadowColor = glow;
     ctx.shadowBlur = 6 + 12 * pulse;
     ctx.fillStyle = '#000';
     ctx.beginPath();
@@ -77,7 +82,7 @@ export class Renderer {
     this.drawCover(t.coverUrl, x * cell + pad, y * cell + pad, size, cell * 0.2, null);
   }
 
-  private drawLabel(x: number, y: number, text: string, boardWidth: number): void {
+  private drawLabel(x: number, y: number, text: string, boardWidth: number, above: boolean): void {
     const { ctx, cell } = this;
     ctx.save();
     ctx.font = `600 ${Math.max(10, cell * 0.38)}px system-ui, sans-serif`;
@@ -87,7 +92,7 @@ export class Renderer {
     const tw = ctx.measureText(label).width + 10;
     const th = Math.max(14, cell * 0.55);
     const cx = Math.min(Math.max(x * cell + cell / 2, tw / 2 + 2), boardWidth - tw / 2 - 2);
-    const cy = y === this.rows - 1 ? y * cell - th / 2 - 2 : (y + 1) * cell + th / 2 + 2;
+    const cy = above ? y * cell - th / 2 - 2 : (y + 1) * cell + th / 2 + 2;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
     ctx.beginPath();
     ctx.roundRect(cx - tw / 2, cy - th / 2, tw, th, th / 2);
@@ -97,10 +102,10 @@ export class Renderer {
     ctx.restore();
   }
 
-  private drawHead(game: SnakeGame<Track>, palette: Palette): void {
+  private drawHead(game: SnakeGame<Track>, color: string): void {
     const { ctx, cell } = this;
     const head = game.snake[0];
-    this.drawBlock(head.x, head.y, game.status === 'over' ? '#ff4d4d' : palette[0], 1);
+    this.drawBlock(head.x, head.y, game.status === 'over' ? '#ff4d4d' : color, 1);
     const f = DELTA[game.dir];
     const s = { x: -f.y, y: f.x };
     const cx = head.x * cell + cell / 2;

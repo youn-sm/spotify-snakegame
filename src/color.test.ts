@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PALETTE, extractPalette } from './color';
+import { accentColor, DEFAULT_PALETTE, extractPalette } from './color';
 
 function pixels(...runs: [number[], number][]): Uint8ClampedArray {
   const out: number[] = [];
@@ -25,5 +25,19 @@ describe('extractPalette', () => {
 
   it('falls back to the default palette for empty input', () => {
     expect(extractPalette(new Uint8ClampedArray())).toEqual(DEFAULT_PALETTE);
+  });
+});
+
+describe('accentColor', () => {
+  it('picks the most saturated color', () => {
+    expect(accentColor(['#333333', '#ff0000', '#808080'])).toBe('#ff1a1a');
+  });
+
+  it('lifts dark colors so the snake stays visible', () => {
+    expect(accentColor(['#400000', '#400000', '#400000'])).toBe('#ff1a1a');
+  });
+
+  it('falls back to Spotify green for grayscale covers', () => {
+    expect(accentColor(['#111111', '#777777', '#eeeeee'])).toBe('#1db954');
   });
 });
